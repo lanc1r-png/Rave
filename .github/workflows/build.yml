@@ -15,12 +15,6 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - name: Fetch Whisper model if missing
-        run: |
-          if [ ! -d Raven/Resources/WhisperModels/openai_whisper-tiny ]; then
-            ./Scripts/fetch_whisper_model.sh
-          fi
-
       - name: Build (unsigned)
         run: |
           xcodebuild \

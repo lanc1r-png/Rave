@@ -1,0 +1,56 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "Continue listening": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Продолжить слушать"
+          }
+        }
+      }
+    },
+    "Resume your latest audiobook.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вернитесь к последней аудиокниге."
+          }
+        }
+      }
+    },
+    "Nothing to continue": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Пока нечего продолжать"
+          }
+        }
+      }
+    },
+    "Open Raven to add a book.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Откройте Raven и добавьте книгу."
+          }
+        }
+      }
+    },
+    "Finished": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Прослушано"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

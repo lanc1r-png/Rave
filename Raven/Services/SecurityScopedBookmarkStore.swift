@@ -58,9 +58,9 @@ enum BookmarkError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .staleBookmark:
-            "The book folder is no longer accessible. Re-import the folder from Files."
+            String(localized: "The book folder is no longer accessible. Re-import the folder from Files.")
         case .accessDenied:
-            "Could not access the book folder. Check Files permissions."
+            String(localized: "Could not access the book folder. Check Files permissions.")
         }
     }
 }

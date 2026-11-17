@@ -173,9 +173,9 @@ enum ImportError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .duplicateBook(let existingTitle):
-            "This audiobook is already in your library as \"\(existingTitle)\"."
+            String(localized: "This audiobook is already in your library as \"\(existingTitle)\".")
         case .notAFolder:
-            "Please select a folder containing audio files."
+            String(localized: "Please select a folder containing audio files.")
         }
     }
 }

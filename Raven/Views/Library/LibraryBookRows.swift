@@ -66,9 +66,15 @@ struct FeaturedBookRow: View {
 
                 VStack(alignment: .leading, spacing: 6) {
                     RavenProgressBar(progress: progress)
-                    Text("\(Int(progress * 100))% Completed")
-                        .font(RavenDesign.Typography.labelCaps())
-                        .foregroundStyle(RavenDesign.Colors.onSurface)
+                    if book.isFinished {
+                        Label("Finished", systemImage: "checkmark.circle.fill")
+                            .font(RavenDesign.Typography.labelCaps())
+                            .foregroundStyle(RavenDesign.Colors.primary)
+                    } else {
+                        Text("\(Int(progress * 100))% completed")
+                            .font(RavenDesign.Typography.labelCaps())
+                            .foregroundStyle(RavenDesign.Colors.onSurface)
+                    }
                 }
                 .padding(.top, RavenDesign.Spacing.stackMedium)
             }
@@ -100,9 +106,15 @@ struct CompactBookRow: View {
                     .font(RavenDesign.Typography.labelCaps())
                     .foregroundStyle(RavenDesign.Colors.onSurfaceVariant)
 
-                Text("\(TimeFormatting.durationCompact(remainingDuration)) remaining")
-                    .font(RavenDesign.Typography.labelCaps())
-                    .foregroundStyle(RavenDesign.Colors.onSurfaceVariant.opacity(0.6))
+                if book.isFinished {
+                    Label("Finished", systemImage: "checkmark.circle.fill")
+                        .font(RavenDesign.Typography.labelCaps())
+                        .foregroundStyle(RavenDesign.Colors.primary)
+                } else {
+                    Text("\(TimeFormatting.durationCompact(remainingDuration)) remaining")
+                        .font(RavenDesign.Typography.labelCaps())
+                        .foregroundStyle(RavenDesign.Colors.onSurfaceVariant.opacity(0.6))
+                }
 
                 if !book.isAvailable {
                     Text("Folder missing")

@@ -26,9 +26,14 @@ final class Book {
     var playbackRate: Float
     var artworkData: Data?
     var contentFingerprint: String
+    /// Set when the book is finished or manually marked as listened.
+    var isFinished: Bool = false
 
     @Relationship(deleteRule: .cascade, inverse: \Chapter.book)
     var chapters: [Chapter]
+
+    @Relationship(deleteRule: .cascade, inverse: \Bookmark.book)
+    var bookmarks: [Bookmark] = []
 
     init(
         title: String,
@@ -65,7 +70,12 @@ final class Book {
         chapters.sorted { $0.sortOrder < $1.sortOrder }
     }
 
+    var sortedBookmarks: [Bookmark] {
+        bookmarks.sorted { $0.bookPosition < $1.bookPosition }
+    }
+
     var progressFraction: Double {
+        if isFinished { return 1 }
         guard totalDuration > 0 else { return 0 }
         let elapsed = sortedChapters.prefix(currentChapterIndex).reduce(0.0) { $0 + $1.duration }
         return min(1, (elapsed + currentTime) / totalDuration)
@@ -77,6 +87,18 @@ final class Book {
             FileManager.default.fileExists(atPath: RavenLibraryStore.folderURL(named: folderName).path)
         case .external:
             !folderBookmark.isEmpty
+        }
+    }
+
+    /// Marks the book as listened, or clears the mark and rewinds if it was at the end.
+    func setFinished(_ finished: Bool) {
+        isFinished = finished
+        if !finished {
+            let elapsed = sortedChapters.prefix(currentChapterIndex).reduce(0.0) { $0 + $1.duration } + currentTime
+            if totalDuration > 0, elapsed >= totalDuration - 1 {
+                currentChapterIndex = 0
+                currentTime = 0
+            }
         }
     }
 

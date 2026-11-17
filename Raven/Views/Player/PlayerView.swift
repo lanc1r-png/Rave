@@ -5,90 +5,37 @@
 //  Created by Ahsan Minhas on 28/05/2026.
 //
 
+import SwiftData
 import SwiftUI
-
-/// Applies scroll-offset hysteresis so collapse state does not thrash while scrolling.
-struct PlayerCollapseState {
-    private(set) var isCollapsed = false
-    private var keepsExpanded = false
-    private var keepsCollapsed = false
-
-    mutating func expandManually() {
-        isCollapsed = false
-        keepsExpanded = true
-        keepsCollapsed = false
-    }
-
-    mutating func collapseManually() {
-        isCollapsed = true
-        keepsCollapsed = true
-        keepsExpanded = false
-    }
-
-    mutating func update(for offset: CGFloat) -> Bool {
-        if keepsCollapsed {
-            return false
-        }
-
-        if keepsExpanded {
-            if offset < 8 {
-                keepsExpanded = false
-            } else {
-                return false
-            }
-        }
-
-        if !isCollapsed, offset > 48 {
-            isCollapsed = true
-            return true
-        }
-        if isCollapsed, offset < 8 {
-            isCollapsed = false
-            return true
-        }
-        return false
-    }
-
-    mutating func reset() {
-        isCollapsed = false
-        keepsExpanded = false
-        keepsCollapsed = false
-    }
-}
 
 struct PlayerView: View {
     let book: Book
+    var autoPlay = false
+
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
     @Environment(AudioPlayerService.self) private var player
     @State private var viewModel = PlayerViewModel()
-    @State private var collapseState = PlayerCollapseState()
     @State private var showChapterList = false
-
-    private static let collapseAnimation = Animation.spring(response: 0.38, dampingFraction: 0.86)
+    @State private var bookmarkBeingRenamed: Bookmark?
+    @State private var renameDraft = ""
 
     var body: some View {
         VStack(spacing: 0) {
-            playerTopSection
+            playerNavigationBar
 
-            if let chapter = player.currentChapter {
-                TranscriptPanel(
-                    book: book,
-                    chapter: chapter,
-                    isPlayerCollapsed: collapseState.isCollapsed,
-                    onPlayerCollapseChange: setPlayerCollapsed,
-                    onScrollOffsetChange: { offset in
-                        var next = collapseState
-                        if next.update(for: offset) {
-                            withAnimation(Self.collapseAnimation) {
-                                collapseState = next
-                            }
-                        }
-                    },
-                    usesPlayerDarkTheme: true
-                )
-            } else {
-                Spacer()
+            ScrollView {
+                VStack(spacing: 24) {
+                    artworkSection
+                    metadataSection
+                    controlsSection
+                    bookmarksSection
+                }
+                .padding(.horizontal, RavenDesign.Spacing.pageMargin)
+                .padding(.top, 8)
+                .padding(.bottom, 32)
             }
+            .scrollIndicators(.hidden)
         }
         .background {
             ZStack {
@@ -101,83 +48,32 @@ struct PlayerView: View {
         .sheet(isPresented: $showChapterList) {
             ChapterListView(book: book)
         }
+        .alert("Rename bookmark", isPresented: renameAlertBinding) {
+            TextField("Note", text: $renameDraft)
+            Button("Save") {
+                bookmarkBeingRenamed?.note = renameDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+                try? modelContext.save()
+                bookmarkBeingRenamed = nil
+            }
+            Button("Cancel", role: .cancel) {
+                bookmarkBeingRenamed = nil
+            }
+        }
         .task(id: book.id) {
             if player.currentBook?.id != book.id {
                 try? await player.load(book, autoPlay: false)
             }
-        }
-        .onChange(of: player.currentChapter?.id) { _, _ in
-            withAnimation(Self.collapseAnimation) {
-                collapseState = PlayerCollapseState()
+            if autoPlay {
+                player.play()
             }
         }
     }
 
-    private func setPlayerCollapsed(_ collapsed: Bool) {
-        if collapsed {
-            guard !collapseState.isCollapsed else { return }
-            var next = collapseState
-            next.collapseManually()
-            withAnimation(Self.collapseAnimation) {
-                collapseState = next
-            }
-        } else {
-            guard collapseState.isCollapsed else { return }
-            var next = collapseState
-            next.expandManually()
-            withAnimation(Self.collapseAnimation) {
-                collapseState = next
-            }
-        }
-    }
-
-    private var playerTopSection: some View {
-        VStack(spacing: 0) {
-            playerNavigationBar
-            playerHeader
-                .clipped()
-        }
-        .contentShape(Rectangle())
-        .gesture(playerCollapseDragGesture)
-    }
-
-    private var playerCollapseDragGesture: some Gesture {
-        DragGesture(minimumDistance: 12)
-            .onEnded { value in
-                let vertical = value.translation.height
-                let horizontal = value.translation.width
-                guard abs(vertical) > abs(horizontal), abs(vertical) > 20 else { return }
-
-                if vertical > 20 {
-                    setPlayerCollapsed(false)
-                } else {
-                    setPlayerCollapsed(true)
-                }
-            }
-    }
-
-    @ViewBuilder
-    private var playerHeader: some View {
-        Group {
-            if collapseState.isCollapsed {
-                collapsedPlayerBar
-                    .transition(
-                        .asymmetric(
-                            insertion: .opacity.combined(with: .move(edge: .top)),
-                            removal: .opacity.combined(with: .scale(scale: 0.98, anchor: .top))
-                        )
-                    )
-            } else {
-                expandedPlayerContent
-                    .transition(
-                        .asymmetric(
-                            insertion: .opacity.combined(with: .scale(scale: 0.94, anchor: .top)),
-                            removal: .opacity.combined(with: .scale(scale: 0.96, anchor: .top))
-                        )
-                    )
-            }
-        }
-        .animation(Self.collapseAnimation, value: collapseState.isCollapsed)
+    private var renameAlertBinding: Binding<Bool> {
+        Binding(
+            get: { bookmarkBeingRenamed != nil },
+            set: { if !$0 { bookmarkBeingRenamed = nil } }
+        )
     }
 
     private var playerNavigationBar: some View {
@@ -190,6 +86,7 @@ struct PlayerView: View {
             }
             .buttonStyle(.glass)
             .buttonBorderShape(.circle)
+            .accessibilityLabel("Close player")
 
             Spacer()
 
@@ -200,7 +97,7 @@ struct PlayerView: View {
 
                 Text(chapterSubtitle)
                     .font(RavenDesign.Typography.labelCaps())
-                    .foregroundStyle(.white.opacity(0.4))
+                    .foregroundStyle(.white.opacity(0.5))
                     .textCase(.uppercase)
                     .tracking(1.2)
                     .lineLimit(1)
@@ -209,8 +106,20 @@ struct PlayerView: View {
             Spacer()
 
             Menu {
-                Button("Chapters") {
+                Button {
                     showChapterList = true
+                } label: {
+                    Label("Chapters", systemImage: "list.bullet")
+                }
+                Button {
+                    book.setFinished(!book.isFinished)
+                    try? modelContext.save()
+                } label: {
+                    if book.isFinished {
+                        Label("Mark as unfinished", systemImage: "arrow.uturn.backward.circle")
+                    } else {
+                        Label("Mark as finished", systemImage: "checkmark.circle")
+                    }
                 }
             } label: {
                 Image(systemName: "ellipsis")
@@ -230,61 +139,12 @@ struct PlayerView: View {
         player.currentChapter?.title ?? book.title
     }
 
-    private var expandedPlayerContent: some View {
-        VStack(spacing: 16) {
-            artworkSection
-            metadataSection
-            controlsSection
-        }
-        .padding(.horizontal, RavenDesign.Spacing.pageMargin)
-        .padding(.bottom, 12)
-    }
-
-    private var collapsedPlayerBar: some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 12) {
-                BookArtworkView(book: book, cornerRadius: 6, contentMode: .fit)
-                    .frame(width: 36, height: 36)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(player.currentChapter?.title ?? book.title)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white)
-                        .lineLimit(1)
-
-                    PlayerElapsedLabel()
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(.white.opacity(0.5))
-                }
-
-                Spacer(minLength: 8)
-
-                PlayerBedtimeButton()
-
-                Button {
-                    player.togglePlayPause()
-                } label: {
-                    Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
-                        .font(.title3)
-                        .foregroundStyle(.white)
-                        .frame(width: 36, height: 36)
-                }
-                .buttonStyle(.plain)
-            }
-
-            PlayerProgressSection(viewModel: viewModel, controlSize: .mini)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-        .padding(.horizontal, 12)
-    }
-
     private var artworkSection: some View {
         BookArtworkView(book: book, cornerRadius: 24, contentMode: .fit)
             .aspectRatio(1, contentMode: .fit)
-            .frame(maxWidth: 240)
+            .frame(maxWidth: 280)
             .shadow(color: .black.opacity(0.35), radius: 24, y: 12)
+            .padding(.top, 8)
     }
 
     private var metadataSection: some View {
@@ -297,9 +157,16 @@ struct PlayerView: View {
 
             Text(book.author.isEmpty ? book.title : book.author)
                 .font(RavenDesign.Typography.bodyUI())
-                .foregroundStyle(.white.opacity(0.6))
+                .foregroundStyle(.white.opacity(0.65))
                 .multilineTextAlignment(.center)
                 .lineLimit(1)
+
+            if book.isFinished {
+                Label("Finished", systemImage: "checkmark.circle.fill")
+                    .font(RavenDesign.Typography.labelCaps())
+                    .foregroundStyle(.white.opacity(0.8))
+                    .padding(.top, 4)
+            }
         }
     }
 
@@ -350,6 +217,70 @@ struct PlayerView: View {
         }
     }
 
+    private var bookmarksSection: some View {
+        VStack(alignment: .leading, spacing: RavenDesign.Spacing.stackMedium) {
+            HStack {
+                Text("Bookmarks")
+                    .font(RavenDesign.Typography.headlineMedium())
+                    .foregroundStyle(.white)
+                Spacer()
+                Button {
+                    player.addBookmark()
+                } label: {
+                    Label("Add bookmark", systemImage: "bookmark.fill")
+                        .font(RavenDesign.Typography.labelCaps())
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                }
+                .buttonStyle(.glass)
+                .buttonBorderShape(.capsule)
+            }
+
+            if book.sortedBookmarks.isEmpty {
+                Text("No bookmarks yet. Tap “Add bookmark” to save your place.")
+                    .font(RavenDesign.Typography.bodyUI())
+                    .foregroundStyle(.white.opacity(0.6))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(Array(book.sortedBookmarks.enumerated()), id: \.element.id) { index, bookmark in
+                        BookmarkRow(bookmark: bookmark, fallbackTitle: chapterTitle(for: bookmark)) {
+                            player.seekBookPosition(bookmark.bookPosition)
+                            player.play()
+                        }
+                        .contextMenu {
+                            Button {
+                                renameDraft = bookmark.note
+                                bookmarkBeingRenamed = bookmark
+                            } label: {
+                                Label("Rename", systemImage: "pencil")
+                            }
+                            Button(role: .destructive) {
+                                modelContext.delete(bookmark)
+                                try? modelContext.save()
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        }
+
+                        if index < book.sortedBookmarks.count - 1 {
+                            Divider().overlay(.white.opacity(0.15))
+                        }
+                    }
+                }
+                .padding(.horizontal, 16)
+                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+            }
+        }
+    }
+
+    private func chapterTitle(for bookmark: Bookmark) -> String {
+        let chapters = book.sortedChapters
+        guard chapters.indices.contains(bookmark.chapterIndex) else { return book.title }
+        return chapters[bookmark.chapterIndex].title
+    }
+
     private var playbackSpeedButton: some View {
         Menu {
             ForEach(viewModel.playbackRates, id: \.self) { rate in
@@ -383,6 +314,41 @@ struct PlayerView: View {
         }
         .buttonStyle(.plain)
         .glassEffect(.regular.interactive(), in: Circle())
+    }
+}
+
+private struct BookmarkRow: View {
+    let bookmark: Bookmark
+    let fallbackTitle: String
+    let onSelect: () -> Void
+
+    var body: some View {
+        Button(action: onSelect) {
+            HStack(spacing: 12) {
+                Image(systemName: "bookmark.fill")
+                    .foregroundStyle(.white.opacity(0.8))
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(bookmark.note.isEmpty ? fallbackTitle : bookmark.note)
+                        .font(RavenDesign.Typography.bodyUI().weight(.medium))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                    Text(bookmark.createdAt, format: .dateTime.day().month().hour().minute())
+                        .font(RavenDesign.Typography.labelCaps())
+                        .foregroundStyle(.white.opacity(0.5))
+                }
+
+                Spacer()
+
+                Text(TimeFormatting.clock(bookmark.bookPosition))
+                    .font(RavenDesign.Typography.labelCaps())
+                    .monospacedDigit()
+                    .foregroundStyle(.white.opacity(0.7))
+            }
+            .padding(.vertical, 12)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -425,16 +391,6 @@ private struct PlayerProgressSection: View {
     }
 }
 
-private struct PlayerElapsedLabel: View {
-    @Environment(AudioPlayerService.self) private var player
-
-    var body: some View {
-        Text(
-            "\(TimeFormatting.clock(player.bookElapsedTime)) · \(TimeFormatting.remaining(player.bookElapsedTime, total: player.bookTotalDuration))"
-        )
-    }
-}
-
 private struct PlayerBedtimeButton: View {
     @Environment(AudioPlayerService.self) private var player
 
@@ -459,5 +415,5 @@ private struct PlayerBedtimeButton: View {
 #Preview {
     PlayerView(book: Book(title: "The Name of the Wind", author: "Patrick Rothfuss"))
         .environment(AudioPlayerService())
-        .environment(TranscriptionService())
+        .modelContainer(for: [Book.self, Chapter.self, Bookmark.self], inMemory: true)
 }

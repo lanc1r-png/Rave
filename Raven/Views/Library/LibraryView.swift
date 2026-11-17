@@ -12,10 +12,12 @@ struct LibraryView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
     @Environment(AudioPlayerService.self) private var player
+    @Environment(DeepLinkRouter.self) private var router
     @Query(sort: \Book.importedAt, order: .reverse) private var books: [Book]
     @State private var viewModel = LibraryViewModel()
     @State private var visiblePlayerBookID: UUID?
     @State private var presentedPlayerBook: Book?
+    @State private var presentedAutoPlay = false
 
     private var showMiniPlayer: Bool {
         guard let currentBook = player.currentBook else { return false }
@@ -26,12 +28,13 @@ struct LibraryView: View {
         if let current = player.currentBook, books.contains(where: { $0.id == current.id }) {
             return current
         }
-        return books.first
+        return books.first(where: { !$0.isFinished }) ?? books.first
     }
 
+    /// Unfinished books first, finished ones at the bottom.
     private var otherBooks: [Book] {
-        guard let featuredBook else { return books }
-        return books.filter { $0.id != featuredBook.id }
+        let rest = featuredBook.map { featured in books.filter { $0.id != featured.id } } ?? books
+        return rest.filter { !$0.isFinished } + rest.filter { $0.isFinished }
     }
 
     var body: some View {
@@ -60,7 +63,7 @@ struct LibraryView: View {
             .toolbar(.hidden, for: .navigationBar)
             .fullScreenCover(isPresented: playerCoverIsPresented) {
                 if let presentedPlayerBook {
-                    PlayerView(book: presentedPlayerBook)
+                    PlayerView(book: presentedPlayerBook, autoPlay: presentedAutoPlay)
                 }
             }
             .safeAreaInset(edge: .bottom, spacing: 8) {
@@ -114,6 +117,11 @@ struct LibraryView: View {
                 if newPhase == .active {
                     Task { await viewModel.syncLibrary(modelContext: modelContext) }
                 }
+            }
+            .onChange(of: router.continueRequested, initial: true) { _, requested in
+                guard requested else { return }
+                router.continueRequested = false
+                continueListening()
             }
         }
     }
@@ -173,7 +181,17 @@ struct LibraryView: View {
         .scrollEdgeEffectStyle(.soft, for: [.top, .bottom])
     }
 
+    /// Opens the most recently played book and starts playback (widget deep link).
+    private func continueListening() {
+        let lastPlayed = books
+            .filter { $0.lastPlayedAt != nil }
+            .max { ($0.lastPlayedAt ?? .distantPast) < ($1.lastPlayedAt ?? .distantPast) }
+        guard let book = lastPlayed ?? featuredBook else { return }
+        presentPlayer(book, autoPlay: true)
+    }
+
     private func progress(for book: Book) -> Double {
+        if book.isFinished { return 1 }
         if player.currentBook?.id == book.id, player.bookTotalDuration > 0 {
             return player.bookElapsedTime / player.bookTotalDuration
         }
@@ -186,19 +204,32 @@ struct LibraryView: View {
             set: { isPresented in
                 if !isPresented {
                     presentedPlayerBook = nil
+                    presentedAutoPlay = false
                     visiblePlayerBookID = nil
                 }
             }
         )
     }
 
-    private func presentPlayer(_ book: Book) {
+    private func presentPlayer(_ book: Book, autoPlay: Bool = false) {
+        presentedAutoPlay = autoPlay
         presentedPlayerBook = book
         visiblePlayerBookID = book.id
     }
 
     @ViewBuilder
     private func deleteContextMenu(for book: Book) -> some View {
+        Button {
+            book.setFinished(!book.isFinished)
+            try? modelContext.save()
+        } label: {
+            if book.isFinished {
+                Label("Mark as unfinished", systemImage: "arrow.uturn.backward.circle")
+            } else {
+                Label("Mark as finished", systemImage: "checkmark.circle")
+            }
+        }
+
         Button(role: .destructive) {
             BookDeletionService.delete(book, modelContext: modelContext, player: player)
         } label: {
@@ -209,7 +240,7 @@ struct LibraryView: View {
 
 #Preview {
     LibraryView()
-        .modelContainer(for: [Book.self, Chapter.self, TranscriptSegment.self], inMemory: true)
+        .modelContainer(for: [Book.self, Chapter.self, Bookmark.self], inMemory: true)
         .environment(AudioPlayerService())
-        .environment(TranscriptionService())
+        .environment(DeepLinkRouter())
 }

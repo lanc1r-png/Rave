@@ -66,7 +66,7 @@ enum RavenDesign {
 }
 
 struct RavenPrimaryButton: View {
-    let title: String
+    let title: LocalizedStringKey
     let systemImage: String
     var isDisabled = false
     let action: () -> Void

@@ -89,13 +89,13 @@ struct SettingsView: View {
         .sheet(isPresented: $showAbout) {
             SettingsInfoSheet(
                 title: "About Raven",
-                message: "Raven is a local-first audiobook player. Import folders of audio, listen with transcripts, and keep everything on your device."
+                message: "Raven is a local-first audiobook player. Import folders of audio and keep everything on your device."
             )
         }
         .sheet(isPresented: $showPrivacy) {
             SettingsInfoSheet(
                 title: "Privacy Policy",
-                message: "Raven does not collect account data or upload your library. Audiobooks, playback progress, and transcripts stay on this device."
+                message: "Raven does not collect account data or upload your library. Audiobooks, playback progress, and bookmarks stay on this device."
             )
         }
     }
@@ -338,7 +338,7 @@ private struct SettingsIconBadge: View {
 }
 
 private struct SettingsNavigationRow: View {
-    let title: String
+    let title: LocalizedStringKey
     let systemImage: String
     let iconColor: Color
     var trailingText: String?
@@ -372,8 +372,8 @@ private struct SettingsNavigationRow: View {
 private struct SettingsInfoSheet: View {
     @Environment(\.dismiss) private var dismiss
 
-    let title: String
-    let message: String
+    let title: LocalizedStringKey
+    let message: LocalizedStringKey
 
     var body: some View {
         NavigationStack {
@@ -399,5 +399,5 @@ private struct SettingsInfoSheet: View {
 #Preview {
     SettingsView()
         .environment(AudioPlayerService())
-        .modelContainer(for: [Book.self, Chapter.self, TranscriptSegment.self], inMemory: true)
+        .modelContainer(for: [Book.self, Chapter.self, Bookmark.self], inMemory: true)
 }

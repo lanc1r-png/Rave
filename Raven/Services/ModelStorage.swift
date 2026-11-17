@@ -10,7 +10,7 @@ import SwiftData
 
 enum ModelStorage {
     static let shared: ModelContainer = {
-        let schema = Schema([Book.self, Chapter.self, TranscriptSegment.self])
+        let schema = Schema([Book.self, Chapter.self, Bookmark.self])
         let configuration = ModelConfiguration(
             "RavenStore",
             schema: schema,

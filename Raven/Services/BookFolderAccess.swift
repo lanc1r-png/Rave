@@ -14,9 +14,9 @@ enum BookFolderError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .missing:
-            "This audiobook folder is no longer in your Raven library."
+            String(localized: "This audiobook folder is no longer in your Raven library.")
         case .invalidBookmark:
-            "Could not access this audiobook. Add it to the Raven folder in Files."
+            String(localized: "Could not access this audiobook. Add it to the Raven folder in Files.")
         }
     }
 }

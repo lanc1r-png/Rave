@@ -58,6 +58,7 @@ final class AudioPlayerService {
     func handleAppBackgrounded() {
         checkSleepTimerExpiry()
         flushProgress()
+        WidgetSync.reload()
     }
 
     func checkSleepTimerExpiry() {
@@ -89,6 +90,21 @@ final class AudioPlayerService {
         try await playChapter(at: currentChapterIndex, seekTo: book.currentTime, autoPlay: autoPlay)
         book.lastPlayedAt = Date()
         saveProgress()
+        WidgetSync.reload()
+    }
+
+    /// Saves a bookmark at the current position.
+    func addBookmark(note: String = "") {
+        guard let book = currentBook, let modelContext else { return }
+        let bookmark = Bookmark(
+            note: note,
+            chapterIndex: currentChapterIndex,
+            chapterTime: currentTime,
+            bookPosition: bookElapsedTime
+        )
+        bookmark.book = book
+        modelContext.insert(bookmark)
+        try? modelContext.save()
     }
 
     func togglePlayPause() {
@@ -102,6 +118,14 @@ final class AudioPlayerService {
 
     func play() {
         guard let player else { return }
+        if let book = currentBook, book.isFinished {
+            // Listening again clears the "finished" mark; restart if the book was at its end.
+            let atEnd = bookTotalDuration > 0 && bookElapsedTime >= bookTotalDuration - 1
+            book.isFinished = false
+            if atEnd {
+                seekBookPosition(0)
+            }
+        }
         player.rate = playbackRate
         isPlaying = true
         updateNowPlaying()
@@ -112,6 +136,7 @@ final class AudioPlayerService {
         isPlaying = false
         saveProgress()
         updateNowPlaying()
+        WidgetSync.reload()
     }
 
     func seek(to time: TimeInterval) {
@@ -274,8 +299,10 @@ final class AudioPlayerService {
         } else {
             isPlaying = false
             currentTime = currentChapter?.duration ?? 0
+            book.isFinished = true
             saveProgress()
             updateNowPlaying()
+            WidgetSync.reload()
         }
     }
 
@@ -299,6 +326,11 @@ final class AudioPlayerService {
         } catch {
             // Keep in memory; next save attempt may succeed.
         }
+        WidgetSync.write(
+            book: book,
+            chapterTitle: currentChapter?.title,
+            progress: bookTotalDuration > 0 ? bookElapsedTime / bookTotalDuration : 0
+        )
     }
 
     private func stopInternal(clearNowPlaying: Bool) {

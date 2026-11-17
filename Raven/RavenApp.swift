@@ -12,7 +12,7 @@ import SwiftData
 struct RavenApp: App {
     @AppStorage(AppearanceSettings.storageKey) private var appearanceRaw = AppAppearance.system.rawValue
     @State private var player = AudioPlayerService()
-    @State private var transcriptionService = TranscriptionService()
+    @State private var router = DeepLinkRouter()
     @State private var showLaunchScreen = true
 
     private var preferredColorScheme: ColorScheme? {
@@ -21,7 +21,6 @@ struct RavenApp: App {
 
     init() {
         RavenLibraryStore.setupOnFirstLaunch()
-        BackgroundTranscriptionCoordinator.shared.register()
     }
 
     var body: some Scene {
@@ -32,10 +31,15 @@ struct RavenApp: App {
                 } else {
                     AppRootView()
                         .environment(player)
-                        .environment(transcriptionService)
+                        .environment(router)
                 }
             }
             .preferredColorScheme(preferredColorScheme)
+            .onOpenURL { url in
+                if url.scheme == "raven", url.host == "continue" {
+                    router.continueRequested = true
+                }
+            }
         }
         .modelContainer(ModelStorage.shared)
     }

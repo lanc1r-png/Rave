@@ -131,9 +131,9 @@ enum ScanError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .enumerationFailed:
-            "Could not read the selected folder."
+            String(localized: "Could not read the selected folder.")
         case .noAudioFiles:
-            "No supported audio files found in this folder."
+            String(localized: "No supported audio files found in this folder.")
         }
     }
 }

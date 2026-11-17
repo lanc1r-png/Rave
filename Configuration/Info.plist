@@ -2,9 +2,16 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<key>CFBundleURLTypes</key>
 	<array>
-		<string>com.Imaginebowl.Raven.transcription</string>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.Imaginebowl.Raven</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>raven</string>
+			</array>
+		</dict>
 	</array>
 	<key>UIBackgroundModes</key>
 	<array>

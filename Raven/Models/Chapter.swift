@@ -16,12 +16,8 @@ final class Chapter {
     var relativePath: String
     var duration: TimeInterval
     var sortOrder: Int
-    var transcriptionStateRaw: String
 
     var book: Book?
-
-    @Relationship(deleteRule: .cascade, inverse: \TranscriptSegment.chapter)
-    var segments: [TranscriptSegment]
 
     init(title: String, relativePath: String, duration: TimeInterval, sortOrder: Int) {
         self.id = UUID()
@@ -29,20 +25,5 @@ final class Chapter {
         self.relativePath = relativePath
         self.duration = duration
         self.sortOrder = sortOrder
-        self.transcriptionStateRaw = TranscriptionState.none.rawValue
-        self.segments = []
-    }
-
-    var transcriptionState: TranscriptionState {
-        get { TranscriptionState(rawValue: transcriptionStateRaw) ?? .none }
-        set { transcriptionStateRaw = newValue.rawValue }
-    }
-
-    var sortedSegments: [TranscriptSegment] {
-        segments.sorted { $0.sortOrder < $1.sortOrder }
-    }
-
-    var hasTranscript: Bool {
-        transcriptionState == .completed && !segments.isEmpty
     }
 }
