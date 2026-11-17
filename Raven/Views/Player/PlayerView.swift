@@ -70,9 +70,6 @@ struct PlayerView: View {
         VStack(spacing: 0) {
             playerTopSection
 
-            Divider()
-                .overlay(RavenDesign.Colors.outlineVariant.opacity(0.2))
-
             if let chapter = player.currentChapter {
                 TranscriptPanel(
                     book: book,
@@ -94,8 +91,11 @@ struct PlayerView: View {
             }
         }
         .background {
-            RavenDesign.Colors.playerSurface
-                .ignoresSafeArea()
+            ZStack {
+                RavenDesign.Colors.playerSurface
+                RavenAmbientBackground(artworkData: book.artworkData, darken: 0.35)
+            }
+            .ignoresSafeArea()
         }
         .toolbar(.hidden, for: .navigationBar)
         .sheet(isPresented: $showChapterList) {
@@ -185,10 +185,11 @@ struct PlayerView: View {
             Button(action: { dismiss() }) {
                 Image(systemName: "chevron.down")
                     .font(.title3.weight(.semibold))
-                    .foregroundStyle(.white.opacity(0.8))
+                    .foregroundStyle(.white)
                     .frame(width: 40, height: 40)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
 
             Spacer()
 
@@ -214,10 +215,11 @@ struct PlayerView: View {
             } label: {
                 Image(systemName: "ellipsis")
                     .font(.title3.weight(.semibold))
-                    .foregroundStyle(.white.opacity(0.8))
+                    .foregroundStyle(.white)
                     .frame(width: 40, height: 40)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
         }
         .padding(.horizontal, RavenDesign.Spacing.pageMargin)
         .padding(.top, 8)
@@ -274,26 +276,15 @@ struct PlayerView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .background(RavenDesign.Colors.playerSurface)
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .padding(.horizontal, 12)
     }
 
     private var artworkSection: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(.black.opacity(0.35))
-                .blur(radius: 20)
-                .scaleEffect(0.92)
-                .offset(y: 16)
-
-            BookArtworkView(book: book, cornerRadius: 8, contentMode: .fit)
-                .aspectRatio(1, contentMode: .fit)
-                .frame(maxWidth: 220)
-//                .overlay {
-//                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-//                        .strokeBorder(.white.opacity(0.1), lineWidth: 1)
-//                }
-                .shadow(color: .black.opacity(0.4), radius: 16, y: 8)
-        }
+        BookArtworkView(book: book, cornerRadius: 24, contentMode: .fit)
+            .aspectRatio(1, contentMode: .fit)
+            .frame(maxWidth: 240)
+            .shadow(color: .black.opacity(0.35), radius: 24, y: 12)
     }
 
     private var metadataSection: some View {
@@ -316,38 +307,45 @@ struct PlayerView: View {
         VStack(spacing: RavenDesign.Spacing.stackMedium) {
             PlayerProgressSection(viewModel: viewModel)
 
-            HStack {
-                playbackSpeedButton
-                    .frame(width: 48, height: 48)
+            GlassEffectContainer(spacing: 20) {
+                HStack {
+                    playbackSpeedButton
+                        .frame(width: 48, height: 48)
+                        .glassEffect(.regular.interactive(), in: Circle())
 
-                Spacer()
+                    Spacer()
 
-                HStack(spacing: 28) {
-                    skipButton(systemImage: "gobackward.15") {
-                        player.skipBackward()
+                    HStack(spacing: 20) {
+                        skipButton(systemImage: "gobackward.15") {
+                            player.skipBackward()
+                        }
+
+                        Button {
+                            player.togglePlayPause()
+                        } label: {
+                            Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
+                                .font(.system(size: 30))
+                                .foregroundStyle(.white)
+                                .frame(width: 76, height: 76)
+                                .contentShape(Circle())
+                        }
+                        .buttonStyle(.plain)
+                        .glassEffect(
+                            .regular.tint(RavenDesign.Colors.primary.opacity(0.85)).interactive(),
+                            in: Circle()
+                        )
+
+                        skipButton(systemImage: "goforward.30") {
+                            player.skipForward()
+                        }
                     }
 
-                    Button {
-                        player.togglePlayPause()
-                    } label: {
-                        Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
-                            .font(.system(size: 28))
-                            .foregroundStyle(RavenDesign.Colors.primary)
-                            .frame(width: 72, height: 72)
-                            .background(.white, in: Circle())
-                            .shadow(color: .black.opacity(0.2), radius: 10, y: 4)
-                    }
-                    .buttonStyle(RavenPressButtonStyle())
+                    Spacer()
 
-                    skipButton(systemImage: "goforward.30") {
-                        player.skipForward()
-                    }
+                    PlayerBedtimeButton()
+                        .frame(width: 48, height: 48)
+                        .glassEffect(.regular.interactive(), in: Circle())
                 }
-
-                Spacer()
-
-                PlayerBedtimeButton()
-                    .frame(width: 48, height: 48)
             }
         }
     }
@@ -368,7 +366,9 @@ struct PlayerView: View {
         } label: {
             Text("\(player.playbackRate, specifier: "%.2g")×")
                 .font(RavenDesign.Typography.labelCaps())
-                .foregroundStyle(.white.opacity(0.8))
+                .foregroundStyle(.white)
+                .frame(width: 48, height: 48)
+                .contentShape(Circle())
         }
         .buttonStyle(.plain)
     }
@@ -376,11 +376,13 @@ struct PlayerView: View {
     private func skipButton(systemImage: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: systemImage)
-                .font(.system(size: 26))
+                .font(.system(size: 24))
                 .foregroundStyle(.white)
-                .frame(width: 44, height: 44)
+                .frame(width: 56, height: 56)
+                .contentShape(Circle())
         }
-        .buttonStyle(RavenPressButtonStyle())
+        .buttonStyle(.plain)
+        .glassEffect(.regular.interactive(), in: Circle())
     }
 }
 
@@ -448,11 +450,6 @@ private struct PlayerBedtimeButton: View {
                         : .white.opacity(0.8)
                 )
                 .frame(width: 36, height: 36)
-                .background {
-                    if player.isBedtimeModeEnabled {
-                        Circle().fill(.white.opacity(0.1))
-                    }
-                }
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Bedtime mode")

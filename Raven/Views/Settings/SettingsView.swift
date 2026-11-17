@@ -35,7 +35,8 @@ struct SettingsView: View {
             .padding(.bottom, player.currentBook == nil ? 32 : 96)
         }
         .scrollIndicators(.hidden)
-        .background(RavenDesign.Colors.paper.ignoresSafeArea())
+        .background(RavenAmbientBackground())
+        .scrollEdgeEffectStyle(.soft, for: [.top, .bottom])
         .safeAreaInset(edge: .top, spacing: 0) {
             SettingsScreenHeader()
         }
@@ -279,9 +280,9 @@ struct SettingsView: View {
             .foregroundStyle(isSelected ? RavenDesign.Colors.onPrimary : RavenDesign.Colors.onSurface)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 12)
-            .background(
-                isSelected ? RavenDesign.Colors.primary : RavenDesign.Colors.surfaceContainerHighest,
-                in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+            .glassEffect(
+                isSelected ? .regular.tint(RavenDesign.Colors.primary).interactive() : .regular.interactive(),
+                in: RoundedRectangle(cornerRadius: 16, style: .continuous)
             )
         }
         .buttonStyle(RavenPressButtonStyle())
@@ -302,9 +303,9 @@ struct SettingsView: View {
                 .foregroundStyle(isSelected ? RavenDesign.Colors.onPrimary : RavenDesign.Colors.onSurface)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
-                .background(
-                    isSelected ? RavenDesign.Colors.primary : RavenDesign.Colors.surfaceContainerHighest,
-                    in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .glassEffect(
+                    isSelected ? .regular.tint(RavenDesign.Colors.primary).interactive() : .regular.interactive(),
+                    in: RoundedRectangle(cornerRadius: 16, style: .continuous)
                 )
         }
         .buttonStyle(RavenPressButtonStyle())
@@ -320,15 +321,6 @@ struct SettingsScreenHeader: View {
             .padding(.horizontal, RavenDesign.Spacing.pageMargin)
             .padding(.bottom, RavenDesign.Spacing.stackMedium)
             .padding(.top, 4)
-            .background {
-                Rectangle()
-                    .fill(RavenDesign.Colors.paper)
-                    .ignoresSafeArea(edges: .top)
-                    .overlay(alignment: .bottom) {
-                        RavenDesign.Colors.outlineVariant.opacity(0.2)
-                            .frame(height: 1)
-                    }
-            }
     }
 }
 
@@ -392,7 +384,6 @@ private struct SettingsInfoSheet: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(RavenDesign.Spacing.pageMargin)
             }
-            .background(RavenDesign.Colors.paper)
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

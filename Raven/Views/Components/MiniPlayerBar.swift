@@ -21,9 +21,8 @@ struct MiniPlayerBar: View {
         HStack(spacing: 12) {
             Button(action: onExpand) {
                 HStack(spacing: 12) {
-                    BookArtworkView(book: book, cornerRadius: 4, contentMode: .fit)
+                    BookArtworkView(book: book, cornerRadius: 10, contentMode: .fit)
                         .frame(width: 40, height: 40)
-                        .background(RavenDesign.Colors.surfaceContainer, in: RoundedRectangle(cornerRadius: 4, style: .continuous))
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(book.title)
@@ -62,21 +61,13 @@ struct MiniPlayerBar: View {
             }
             .padding(.horizontal, 4)
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, 14)
         .padding(.vertical, 12)
-        .background {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(RavenDesign.Colors.surfaceLowest)
-                .shadow(color: .black.opacity(0.12), radius: 12, y: 4)
-                .overlay {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .strokeBorder(RavenDesign.Colors.outlineVariant.opacity(0.15), lineWidth: 1)
-                }
-        }
+        .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
         .overlay(alignment: .bottom) {
             RavenProgressBar(progress: progress, height: 2)
-                .padding(.horizontal, 12)
-                .padding(.bottom, 4)
+                .padding(.horizontal, 22)
+                .padding(.bottom, 5)
         }
     }
 }

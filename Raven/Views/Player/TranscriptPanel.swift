@@ -62,7 +62,7 @@ struct TranscriptPanel: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .background(usesPlayerDarkTheme ? RavenDesign.Colors.playerSurface : Color(.systemGroupedBackground))
+        .background(usesPlayerDarkTheme ? Color.clear : Color(.systemGroupedBackground))
         .task(id: chapter.id) {
             await refreshPanelState()
         }
@@ -117,7 +117,7 @@ struct TranscriptPanel: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .background(usesPlayerDarkTheme ? RavenDesign.Colors.playerSurface : Color(.systemGroupedBackground))
+        .background(usesPlayerDarkTheme ? Color.clear : Color(.systemGroupedBackground))
     }
 
     private func errorView(_ message: String) -> some View {
@@ -271,7 +271,7 @@ struct TranscriptPeekView: View {
                     .padding(.vertical, 8)
 
                     LinearGradient(
-                        colors: [RavenDesign.Colors.playerSurface.opacity(0), RavenDesign.Colors.playerSurface],
+                        colors: [Color.clear, Color.clear],
                         startPoint: .top,
                         endPoint: .bottom
                     )

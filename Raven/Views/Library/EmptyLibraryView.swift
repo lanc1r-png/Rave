@@ -15,8 +15,7 @@ struct EmptyLibraryView: View {
 
     var body: some View {
         ZStack {
-            RavenDesign.Colors.paper
-                .ignoresSafeArea()
+            RavenAmbientBackground()
 
             RavenLogoView(size: 320, cornerRadius: 70)
                 .grayscale(1)

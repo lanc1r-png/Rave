@@ -46,7 +46,7 @@ struct LibraryView: View {
                     populatedLibraryView
                 }
             }
-            .background(RavenDesign.Colors.paper.ignoresSafeArea())
+            .background(RavenAmbientBackground(artworkData: featuredBook?.artworkData))
             .safeAreaInset(edge: .top, spacing: 0) {
                 if books.isEmpty {
                     LibraryScreenHeader()
@@ -95,7 +95,7 @@ struct LibraryView: View {
                 if viewModel.isImporting || viewModel.isSyncing {
                     ProgressView(viewModel.isImporting ? "Adding to library…" : "Scanning library…")
                         .padding()
-                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                 }
             }
             .alert("Library Error", isPresented: .init(
@@ -154,7 +154,7 @@ struct LibraryView: View {
                                     }
 
                                     if index < otherBooks.count - 1 {
-                                        RavenDesign.Colors.outlineVariant.opacity(1)
+                                        RavenDesign.Colors.outlineVariant.opacity(0.4)
                                             .frame(height: 1)
                                             .padding(.leading, RavenDesign.BookCover.compactSize + RavenDesign.Spacing.stackMedium)
                                     }
@@ -170,6 +170,7 @@ struct LibraryView: View {
                 .padding(.bottom, showMiniPlayer ? 96 : 32)
         }
         .scrollIndicators(.hidden)
+        .scrollEdgeEffectStyle(.soft, for: [.top, .bottom])
     }
 
     private func progress(for book: Book) -> Double {

@@ -12,14 +12,14 @@ private struct LibraryBookCover: View {
     let size: CGFloat
 
     var body: some View {
-      RoundedRectangle(cornerRadius: 4, style: .continuous)
+      RoundedRectangle(cornerRadius: 10, style: .continuous)
         .fill(.clear)
         .frame(width: size, height: size)
         .overlay {
-          BookArtworkView(book: book, cornerRadius: 4, contentMode: .fit)
+          BookArtworkView(book: book, cornerRadius: 10, contentMode: .fit)
             .padding(2)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }
 

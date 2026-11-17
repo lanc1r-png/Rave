@@ -41,18 +41,14 @@ struct ChapterListView: View {
                         }
                     }
                 }
-                .background {
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .fill(RavenDesign.Colors.surfaceLowest.opacity(0.4))
-                }
-                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
                 .padding(.horizontal, RavenDesign.Spacing.pageMargin)
                 .padding(.bottom, RavenDesign.Spacing.stackMedium)
             }
 
             chapterSheetMiniPlayer
         }
-        .background(RavenDesign.Colors.secondaryContainer)
+        .presentationBackground(.clear)
         .presentationDetents([.large])
         .presentationDragIndicator(.hidden)
         .presentationCornerRadius(40)

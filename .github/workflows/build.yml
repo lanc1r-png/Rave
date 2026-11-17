@@ -1,0 +1,47 @@
+name: Build IPA
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Fetch Whisper model if missing
+        run: |
+          if [ ! -d Raven/Resources/WhisperModels/openai_whisper-tiny ]; then
+            ./Scripts/fetch_whisper_model.sh
+          fi
+
+      - name: Build (unsigned)
+        run: |
+          xcodebuild \
+            -project Raven.xcodeproj \
+            -scheme Raven \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
+
+      - name: Package IPA
+        run: |
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/Raven.app Payload/
+          zip -qry Raven-unsigned.ipa Payload
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Raven-unsigned-ipa
+          path: Raven-unsigned.ipa

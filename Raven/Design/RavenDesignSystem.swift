@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 /// Stitch design tokens mapped to SwiftUI.
 enum RavenDesign {
@@ -79,13 +80,12 @@ struct RavenPrimaryButton: View {
                     .fontWeight(.semibold)
             }
             .font(RavenDesign.Typography.bodyUI())
-            .foregroundStyle(RavenDesign.Colors.onPrimary)
-            .padding(.horizontal, 40)
-            .padding(.vertical, 16)
-            .background(RavenDesign.Colors.primary, in: Capsule())
-            .shadow(color: .black.opacity(0.06), radius: 4, y: 2)
+            .padding(.horizontal, 28)
+            .padding(.vertical, 6)
         }
-        .buttonStyle(RavenPressButtonStyle())
+        .buttonStyle(.glassProminent)
+        .tint(RavenDesign.Colors.primary)
+        .buttonBorderShape(.capsule)
         .disabled(isDisabled)
         .opacity(isDisabled ? 0.6 : 1)
     }
@@ -105,7 +105,7 @@ struct LibraryScreenHeader: View {
     var isAddDisabled = false
 
     var body: some View {
-        HStack(alignment: .bottom) {
+        HStack(alignment: .center) {
             Text("Library")
                 .font(RavenDesign.Typography.displayLarge())
                 .foregroundStyle(RavenDesign.Colors.onSurface)
@@ -115,24 +115,19 @@ struct LibraryScreenHeader: View {
                     Image(systemName: "folder.badge.plus")
                         .font(.title3)
                         .foregroundStyle(RavenDesign.Colors.onSurface)
+                        .frame(width: 44, height: 44)
                 }
+                .buttonStyle(.glass)
+                .buttonBorderShape(.circle)
                 .disabled(isAddDisabled)
                 .opacity(isAddDisabled ? 0.5 : 1)
+                .accessibilityLabel("Add folder")
             }
         }
         .padding(.horizontal, RavenDesign.Spacing.pageMargin)
-        .padding(.bottom, RavenDesign.Spacing.stackMedium)
+        .padding(.bottom, RavenDesign.Spacing.stackSmall)
         .padding(.top, 4)
         .frame(maxWidth: .infinity)
-        .background {
-            Rectangle()
-                .fill(RavenDesign.Colors.paper)
-                .ignoresSafeArea(edges: .top)
-                .overlay(alignment: .bottom) {
-                    RavenDesign.Colors.outlineVariant.opacity(0.2)
-                        .frame(height: 1)
-                }
-        }
     }
 }
 
@@ -155,22 +150,53 @@ struct RavenProgressBar: View {
 }
 
 struct RavenLibraryCard<Content: View>: View {
-    @Environment(\.colorScheme) private var colorScheme
     @ViewBuilder var content: () -> Content
 
     var body: some View {
         content()
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(RavenDesign.Spacing.pageMargin)
-            .background {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(RavenDesign.Colors.surfaceLowest)
-                    .shadow(
-                        color: .black.opacity(colorScheme == .dark ? 0.25 : 0.06),
-                        radius: colorScheme == .dark ? 8 : 4,
-                        y: colorScheme == .dark ? 4 : 2
-                    )
+            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+    }
+}
+
+/// Ambient backdrop that gives Liquid Glass something to refract:
+/// the current cover blurred and enlarged, or soft tinted blobs when there is none.
+struct RavenAmbientBackground: View {
+    var artworkData: Data?
+    var darken: Double = 0
+
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        ZStack {
+            RavenDesign.Colors.paper
+
+            if let artworkData, let image = UIImage(data: artworkData) {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+                    .scaleEffect(1.6)
+                    .blur(radius: 60)
+                    .saturation(1.3)
+                    .opacity(colorScheme == .dark ? 0.55 : 0.45)
+            } else {
+                Circle()
+                    .fill(RavenDesign.Colors.primary.opacity(0.35))
+                    .frame(width: 320, height: 320)
+                    .blur(radius: 80)
+                    .offset(x: -120, y: -260)
+                Circle()
+                    .fill(RavenDesign.Colors.primaryContainer.opacity(0.45))
+                    .frame(width: 360, height: 360)
+                    .blur(radius: 90)
+                    .offset(x: 140, y: 280)
             }
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+            if darken > 0 {
+                Color.black.opacity(darken)
+            }
+        }
+        .ignoresSafeArea()
     }
 }
